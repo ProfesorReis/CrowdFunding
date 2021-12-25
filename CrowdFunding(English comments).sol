@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.5;
+// SPDX-License-Identifier: Unlicansed
+pragma solidity ^0.8.7;
  
 contract CrowdFunding {
     mapping(address => uint) public contributors;
