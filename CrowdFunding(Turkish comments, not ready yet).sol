@@ -11,6 +11,19 @@ contract CrowdFunding {
     uint public goal;   // Hedefimiz ne kadar bağış toplamak
     uint public raisedAmount;    // Ne kadar bağış toplandı görmek için
 
+    // Para harcama isteği yollamak için Request isimli bir struct tanımlıyoruz.
+    struct Request {
+        string description; // Request'in ne için olduğunu tanımlamak için
+        address payable recipient;  // Yollanacak adres
+        uint value; // İstenilen fiyat
+        bool completed; // Default olarak "false"
+        uint noOfVoters;    // Kaç adet oy verebilecek/vermiş?
+        mapping(address => bool) voters;    // Oy kullananların oyunu true veya false olarak tanımlicak
+    }
+
+    mapping(uint => Request) public requests;   // Harcama Reuqest'lerini depolicak bir mapping ("Request" isimli struct mapping barındırdığı için array kullanamıyoruz.)
+    uint public numRequests;    //  Bunu tanımlamak zorundayız çüknü mapping'ler array'ın index çalışma şekli gibi çalışmıyor?
+
     // Kontartı "deploy" parametredeki değerleri sırasıyla girmemiz gerekiyor.
     // Bazılarına parametre ekledik ama bazısı için eklemedik bunun sebebi parametre eklemediğimize zaten bir değer verdik eğer onun da değişken olmasını istiyorsak parametre ekleyebiliriz.
     constructor(uint _goal, uint _deadline) {
@@ -18,6 +31,11 @@ contract CrowdFunding {
         deadline = block.timestamp + _deadline; // "block.timestamp" şu anki zamanı belirtiyor. Kontrat deploy edildikten kaç saniye sonra bitmesini istiyorsak onu yazıcaz.
         minimumContribution = 100 wei;  // Bu minimum miktar bağış
         admin = msg.sender; // admin'i tanımladık
+    }
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can call this function!");
+        _;
     }
 
     // Bağış yapmak için çağırılması gereken fonksiyon.
@@ -57,5 +75,19 @@ contract CrowdFunding {
         // payable(msg.sender).transfer(contributors[msg.sender]);
 
         contributors[msg.sender] = 0;   // İade gerçekleştikten sonra bağışçının mapping'deki değerini sıfırlıyoruz.
+    }
+
+    // Request oluşturmak için fonksiyon tanımlıyoruz.
+    function createRequest(string memory _description, address payable _recipient, uint _value) public onlyAdmin {
+        Request storage newRequest = requests[numRequests]; // Request bir struct olduğu için storage ile tanımlanmak zorundadır.
+        numRequests++;  // Her yeni request oluşturulduğunda request's mapping'in index'i 0'dan artacak şekilde giderek depolanacaktır.
+    
+        // Değişkenleri tanımlayalım.
+        newRequest.description =_description;
+        newRequest.recipient = _recipient;
+        newRequest.value = _value;
+        newRequest.completed = false;
+        newRequest.noOfVoters = 0;
+
     }
 }
