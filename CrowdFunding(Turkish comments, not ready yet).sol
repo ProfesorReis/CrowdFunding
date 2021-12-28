@@ -33,6 +33,13 @@ contract CrowdFunding {
         admin = msg.sender; // admin'i tanımladık
     }
 
+    // event'ler blockchain'e işlemleri log'lamaya yarar? Front-End'e data yollar?
+    // event'leri çağırırken "emit" kullanılır? Parametreler fonksiyondakilerle aynı olmak zorunda değildir?
+    // Mantığı tam kavarayamadım tekrar gözden geçirip anlamam lazım.
+    event ContributeEvent(address _sender, uint _value);
+    event CreateRequestEvent(string _description, address _recipient, uint _value);
+    event MakePaymentEvent(address _recipient, uint _value);
+
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can call this function!");
         _;
@@ -50,6 +57,8 @@ contract CrowdFunding {
 
         contributors[msg.sender] += msg.value;  // mapping'de bağış yapan kişinin adresine denk gelen uint'i güncelledik.
         raisedAmount += msg.value;
+
+        emit ContributeEvent(msg.sender, msg.value);
     }
 
     // Kontrata para yollanabilmesi için bu fonksyionu çağırmamız lazım?
@@ -88,9 +97,12 @@ contract CrowdFunding {
         newRequest.value = _value;
         newRequest.completed = false;
         newRequest.noOfVoters = 0;
+
+        emit CreateRequestEvent(_description, _recipient, _value);
     }
 
-    function voteRequest(uint _requestNo) public {
+    // Oy kullanmak için fonksiyon
+    function voteRequest(uint _requestNo) public {  // Hangi Request için oy kullanacaksa 0'dan başlayarak index numarası girmesi gerekiyor. Bu yüzden parametre tanımlıyoruz.
         require(contributors[msg.sender] > 0, "You must be a contributer to vote!");
         Request storage thisRequest = requests[_requestNo]; // Yeni bir "Request" tanımlıyoruz.
 
@@ -108,5 +120,7 @@ contract CrowdFunding {
 
         thisRequest.recipient.transfer(thisRequest.value);  // Parayı transfer etmek için
         thisRequest.completed = true;   // Request tamamlandı olarak tanımlıyoruz.
+
+        emit MakePaymentEvent(thisRequest.recipient, thisRequest.value);
     }
 }
