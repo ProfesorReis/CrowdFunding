@@ -18,7 +18,7 @@ contract CrowdFunding {
         uint value; // İstenilen fiyat
         bool completed; // Default olarak "false"
         uint noOfVoters;    // Kaç adet oy verebilecek/vermiş?
-        mapping(address => bool) voters;    // Oy kullananların oyunu true veya false olarak tanımlicak
+        mapping(address => bool) voters;    // Varsayılan bool false olarak gelecek eğer oy kullanmışsa false'yi true'ye çevireceğiz.
     }
 
     mapping(uint => Request) public requests;   // Harcama Reuqest'lerini depolicak bir mapping ("Request" isimli struct mapping barındırdığı için array kullanamıyoruz.)
@@ -88,6 +88,25 @@ contract CrowdFunding {
         newRequest.value = _value;
         newRequest.completed = false;
         newRequest.noOfVoters = 0;
+    }
 
+    function voteRequest(uint _requestNo) public {
+        require(contributors[msg.sender] > 0, "You must be a contributer to vote!");
+        Request storage thisRequest = requests[_requestNo]; // Yeni bir "Request" tanımlıyoruz.
+
+        require(thisRequest.voters[msg.sender] == false, "You have already voted!");
+        thisRequest.voters[msg.sender] = true;  // Oy kullandığı için voters'ı true yapıyoruz.
+        thisRequest.noOfVoters++;   // voters sayısını 1 arttırıyoruz.
+    }
+
+    // Oylama tamamlandıktan sonra ödemeyi yapmak için gereken fonksiyon.
+    function makePayment(uint _requestNo) public onlyAdmin {
+        require(raisedAmount >= goal);
+        Request storage thisRequest = requests[_requestNo];
+        require(thisRequest.completed == false, "The request has been completed!");
+        require(thisRequest.noOfVoters > noOfContributors / 2);   // Bağışçıların yarısından fazlasının oy vermesi lazım.
+
+        thisRequest.recipient.transfer(thisRequest.value);  // Parayı transfer etmek için
+        thisRequest.completed = true;   // Request tamamlandı olarak tanımlıyoruz.
     }
 }
